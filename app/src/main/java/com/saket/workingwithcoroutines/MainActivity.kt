@@ -12,6 +12,7 @@ import kotlinx.coroutines.*
 class MainActivity : AppCompatActivity() {
     val TAG = "MainActivity"
     val customScope = CoroutineScope(Dispatchers.IO)
+
     /**
      *
      * The purpose of this app is to take a closer look at coroutines.
@@ -25,20 +26,49 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        btnStart.setOnClickListener { view ->
+            run {
+                MainScope().launch {
+                    //setTextAfterDelay("Hello Saket!")
+                    lazyAsyncCoroutine()
+                }
+            }
+        }
+
     }
 
-    //Can we switch scope of a coroutine after it has started?
-    //Can we launch multiple coroutines in different scopes
-    fun launchGlobalScopeWithNoParams(view : View) {
+    /*
+    Suspend functions can only be used by Coroutines.
+    They can call other suspend functions only.
+    They can only be called by other suspend functions. Not regular functions..
+    So if we want to call a suspend function from regular function,
+    we can use the Coroutine builders.
+     */
+    suspend fun setTextAfterDelay(sayHello: String) {
+        /*
+        Delay is a suspend function. So it can only be called from another suspend function.
+        So add suspend modifier to the calling function
+         */
+        delay(2000)
+        textView.setText(sayHello)
+    }
+
+    //Can we switch scope of a coroutine after it has started? We can change context using withContext()
+    //Can we launch multiple coroutines in different scopes? Probably yes..
+    fun launchGlobalScopeWithNoParams(view: View) {
         //Using Global Scope is generally discouraged as in this case the coroutine
         //is alive throughout the lifetime of the app. It holds memory which may not be required and
         //hence it is inefficient.
         GlobalScope.launch {
-            delay(3000) //wait for 3 seconds
-            //Log.v(TAG, "Hello Coroutines!!")
-            showMessage("Hello Coroutines!!")
+            //We can use withContext to switch Context of the Coroutine
+            withContext(Dispatchers.IO) {
+                delay(3000) //wait for 3 seconds
+                //Log.v(TAG, "Hello Coroutines!!")
+                showMessage("Hello Coroutines!!")
+            }
         }
     }
+
     //We can call regular functions from coroutines
     private fun showMessage(string_message: String) {
         Log.v(TAG, string_message + " in " + Thread.currentThread().name)
@@ -68,7 +98,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun asyncGlobalScopeWithNoParams(view: View) {
         GlobalScope.launch {
-            val result = async { calculateSum(3 , 4) }
+            val result = async { calculateSum(3, 4) }
             //delay(2000)
             Log.v(TAG, "Result of sum method: ${result.await()}")
             Log.v(TAG, "Continue with coroutine execution.")
@@ -77,7 +107,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun calculateSum(a : Int, b : Int) : Int {
+    fun calculateSum(a: Int, b: Int): Int {
         Thread.sleep(3000)  //Introduce delay for 3 secs to mock some work
         return a + b
     }
@@ -88,7 +118,7 @@ class MainActivity : AppCompatActivity() {
     Here we execute 3 async coroutines inside the global scope. Each coroutine operates
     using a different coroutineContext. And the final result is displayed in the logs.
      */
-    fun asyncWithGlobalScopeAndContext(view: View) : Unit {
+    fun asyncWithGlobalScopeAndContext(view: View): Unit {
         GlobalScope.launch {
             val result1 = async(coroutineContext, CoroutineStart.DEFAULT) {
                 showMessage("Calculating sum using scope context")
@@ -107,13 +137,46 @@ class MainActivity : AppCompatActivity() {
                 calculateDProduct(3, 9)
             }
             //The final result gets printed when all 3 async corotuines return their results
-            Log.v(TAG, "Result of async operation : ADD: ${result1.await()} , Diff: ${result2.await()}, Product: ${result3.await()} ")
+            Log.v(
+                TAG,
+                "Result of async operation : ADD: ${result1.await()} , Diff: ${result2.await()}, Product: ${result3.await()} "
+            )
         }
     }
 
-    fun calculateDiff(a : Int, b : Int) = a - b
+    fun calculateDiff(a: Int, b: Int) = a - b
 
-    fun calculateDProduct(a : Int, b : Int) = a * b
+    fun calculateDProduct(a: Int, b: Int) = a * b
+
+    /*
+    Lazily started Coroutine.
+    async can be made lazy by setting its start parameter to CoroutineStart.LAZY.
+    In this mode it only starts the coroutine when its result is required by await,
+    or if its Job 's start function is invoked.
+
+    Note that if we just call await in println without first calling start on individual coroutines,
+    this will lead to sequential behavior, since await starts the coroutine execution and waits for its finish,
+    which is not the intended use-case for laziness.
+    The use-case for async(start = CoroutineStart.LAZY) is a replacement for the standard lazy function
+    in cases when computation of the value involves suspending functions.
+     */
+    suspend fun lazyAsyncCoroutine() {
+        val one = GlobalScope.async(start = CoroutineStart.LAZY) {
+            delay(2000)
+            32
+        }
+        val two = GlobalScope.async(start = CoroutineStart.LAZY) {
+            delay(2300)
+            23
+        }
+
+        //Start one
+        one.start()
+        //Start two
+        two.start()
+
+        Log.d(TAG, "The answer is ${one.await() + two.await()}")
+    }
 
     //runBlocking by default runs with coroutine scope of the current thread's event loop.
     //however we can provide our own coroutineContext which provides a coroutineDispatcher.
