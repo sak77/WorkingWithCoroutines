@@ -6,26 +6,35 @@ import android.util.Log
 import android.view.View
 import androidx.activity.viewModels
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 
+/**
+ *
+ * The purpose of this app is to take a closer look at coroutines.
+ *
+ * Focus on CoroutineScope and its sub-classes -
+ * ViewModelScope
+ * LifeCycleScope
+ * GlobalScope
+ * MainScope
+ * CoroutineScope
+ * Coroutine Context - main components - Job and Dispatcher
+ * Coroutine builder(s) - launch, runBlocking, async-await
+ *
+ */
 class MainActivity : AppCompatActivity() {
     val TAG = "MainActivity"
+    /*
+    Apart from predefined scopes, one can also define custom scope.
+     */
     val customScope = CoroutineScope(Dispatchers.IO)
 
-    /**
-     *
-     * The purpose of this app is to take a closer look at coroutines.
-     *
-     * Focus on -
-     * CoroutineScope and its sub-classes - GlobalScope, MainScope, CoroutineScope, ViewModelScope and LifeCycleScope.
-     * Coroutine Context - main components - Job and Dispatcher
-     * Coroutine builder(s) - launch, runBlocking, async-await
-     *
-     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        /*
         btnStart.setOnClickListener { view ->
             run {
                 MainScope().launch {
@@ -34,15 +43,18 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
+         */
     }
 
     /*
-    Suspend functions can only be used by Coroutines.
-    They can call other suspend functions only.
-    They can only be called by other suspend functions. Not regular functions..
-    So if we want to call a suspend function from regular function,
-    we can use the Coroutine builders.
+    Suspend functions will suspend execution of the calling coroutine/function
+    while they execute.
+    Suspend can only be called by other suspend functions or Coroutines.
+    Coroutines can call suspend as well regular functions.
+    Suspended functions can call public suspended functions like:
+    coroutineScope, delay and withContext.
+    As a rule of thumb, use regular function with coroutines unless the compiler
+    asks you to use 'suspend' keyword.
      */
     suspend fun setTextAfterDelay(sayHello: String) {
         /*
@@ -53,18 +65,18 @@ class MainActivity : AppCompatActivity() {
         textView.setText(sayHello)
     }
 
-    //Can we switch scope of a coroutine after it has started? We can change context using withContext()
+    //Can we change Dispatcher of a coroutine after it has started? Use withContext()
     //Can we launch multiple coroutines in different scopes? Probably yes..
     fun launchGlobalScopeWithNoParams(view: View) {
         //Using Global Scope is generally discouraged as in this case the coroutine
-        //is alive throughout the lifetime of the app. It holds memory which may not be required and
-        //hence it is inefficient.
+        //is alive throughout the lifetime of the app. It holds memory which may not
+        // be required and hence it is inefficient.
         GlobalScope.launch {
-            //We can use withContext to switch Context of the Coroutine
-            withContext(Dispatchers.IO) {
+            showMessage("Launching coroutine in ${Thread.currentThread().name}")
+            //Use withContext to switch to Main thread.
+            withContext(Dispatchers.Main) {
                 delay(3000) //wait for 3 seconds
-                //Log.v(TAG, "Hello Coroutines!!")
-                showMessage("Hello Coroutines!!")
+                showMessage("Coroutine shows message on thread ${Thread.currentThread().name}")
             }
         }
     }
@@ -153,12 +165,6 @@ class MainActivity : AppCompatActivity() {
     async can be made lazy by setting its start parameter to CoroutineStart.LAZY.
     In this mode it only starts the coroutine when its result is required by await,
     or if its Job 's start function is invoked.
-
-    Note that if we just call await in println without first calling start on individual coroutines,
-    this will lead to sequential behavior, since await starts the coroutine execution and waits for its finish,
-    which is not the intended use-case for laziness.
-    The use-case for async(start = CoroutineStart.LAZY) is a replacement for the standard lazy function
-    in cases when computation of the value involves suspending functions.
      */
     suspend fun lazyAsyncCoroutine() {
         val one = GlobalScope.async(start = CoroutineStart.LAZY) {
@@ -176,31 +182,14 @@ class MainActivity : AppCompatActivity() {
         two.start()
 
         Log.d(TAG, "The answer is ${one.await() + two.await()}")
-    }
-
-    //runBlocking by default runs with coroutine scope of the current thread's event loop.
-    //however we can provide our own coroutineContext which provides a coroutineDispatcher.
-    //when coroutineDispatcher is specified, the coroutine runs in the scope of the dispatcher.
-    //SHOULD NOT be used from a coroutine. It is used to used in 'main' functions and
-    //to run tests...
-    fun runBlockingWithoutParams(view: View) {
-        runBlocking {
-            showMessage("Calling delay in coroutine...")
-            delay(4000)
-            showMessage("Continue work in coroutine....")
-        }
-        showMessage("Doing work on the main thread....")
-    }
-
-    //run blocking with coroutineContext
-    fun runBlockingWithCoroutineContext(view: View) {
-        //Using Dispatchers.Main with runBlocking causes the app to crash for some reason??
-        runBlocking(Dispatchers.Default) {
-            showMessage("Calling delay in coroutine...")
-            delay(4000)
-            showMessage("Continue work in coroutine....")
-        }
-        showMessage("Doing work on the main thread....")
+        /*
+        Note that if we just call await in println without first calling start on
+        individual coroutines, this will lead to sequential behavior, since await starts
+        the coroutine execution and waits for its finish, which is not the intended use-case
+        for laziness. The use-case for async(start = CoroutineStart.LAZY) is a replacement
+        for the standard lazy function in cases when computation of the value involves
+        suspending functions.
+         */
     }
 
     //CoroutineScope with launch
@@ -218,6 +207,79 @@ class MainActivity : AppCompatActivity() {
                 delay(500)
             }
         }
+    }
+
+    //CoroutineScope with async-await
+    /*
+    Notice how i am using the coroutineScope instance to launch 2 separate Coroutines.
+    First i use async to calculate the Sum. Then i launch another Coroutine to display
+    the result. It is observed that both coroutines execute on separate threads from the
+    default thread-pool....
+    Btw i have not used the cancel here as it was not necessary..
+     */
+    fun asyncWithCoroutineScope(view: View) {
+        val customScope2 = CoroutineScope(Dispatchers.IO)
+        val result = customScope2.async {
+            delay(1000)
+            showMessage("Calculating sum in async")
+            calculateSum(22, 34)
+        }
+
+        customScope2.launch {
+            showMessage("Sum is ${result.await()}")
+        }
+    }
+
+    /*
+    viewModelScope is part of the ViewModel and it gets cancelled when the viewModel is cleared.
+    You must add KTX dependencies for viewModelScope and lifecycleScope to use them..
+     */
+    fun viewModelScopeTrial(view: View) {
+        val myViewModel: MyViewModel by viewModels()
+        myViewModel.launchCoroutine()
+    }
+
+    /*
+    LifecycleScope executes the coroutine within the current lifecycle scope.
+     */
+    fun lifeCycleScopeTrial() {
+        //Executes the job when lifecycle enters start state..
+        lifecycleScope.launchWhenStarted {
+
+        }
+    }
+
+    //runBlocking by default runs with coroutine scope of the current thread's event loop.
+    //however we can provide our own coroutineContext which provides a coroutineDispatcher.
+    //when coroutineDispatcher is specified, the coroutine runs in the scope of the dispatcher.
+    //SHOULD NOT be used from a coroutine. It is used to used in 'main' functions and
+    //to run tests...
+    fun runBlockingWithoutParams(view: View) {
+        runBlocking {
+            showMessage("Calling delay in coroutine...")
+            delay(4000)
+            showMessage("Continue work in coroutine....")
+        }
+        showMessage("Doing work on the main thread....")
+    }
+
+    //MainScope - uses Dispatchers.Main...so runs on the main thread by default.
+    //However it can be customized to run on the default threadpool thread as well...
+    fun testMainScope(view: View) {
+        MainScope().launch() {
+            showMessage("This is in the mainscope : ")
+        }
+    }
+
+    //run blocking with coroutineContext
+    fun runBlockingWithCoroutineContext(view: View) {
+        //Using Dispatchers.Main with runBlocking causes the app to crash for some reason??
+        runBlocking(Dispatchers.Default) {
+            showMessage("Calling delay in coroutine...")
+            delay(4000)
+            showMessage("Continue work in coroutine....")
+        }
+        showMessage("Doing work on the main thread....")
     }
 
     fun cancelCoroutineScope(view: View) {
@@ -246,41 +308,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //CoroutineScope with async-await
-    /*
-    Notice how i am using the coroutineScope instance to launch 2 separate Coroutines.
-    First i use async to calculate the Sum. Then i launch another Coroutine to display
-    the result. It is observed that both coroutines execute on separate threads from the
-    default thread-pool....
-    Btw i have not used the cancel here as it was not necessary..
-     */
-    fun asyncWithCoroutineScope(view: View) {
-        val customScope2 = CoroutineScope(Dispatchers.IO)
-        val result = customScope2.async {
-            delay(1000)
-            showMessage("Calculating sum in async")
-            calculateSum(22, 34)
-        }
-
-        customScope2.launch {
-            showMessage("Sum is ${result.await()}")
-        }
-    }
-
-    //MainScope - uses Dispatchers.Main...so runs on the main thread by default.
-    //However it can be customized to run on the default threadpool thread as well...
-    fun testMainScope(view: View) {
-        MainScope().launch() {
-            showMessage("This is in the mainscope : ")
-        }
-    }
-
-    /*
-    viewModelScope is part of the ViewModel and it gets cancelled when the viewModel is cleared.
-    You must add KTX dependencies for viewModelScope and lifecycleScope to use them..
-     */
-    fun viewModelScopeTrial(view: View) {
-        val myViewModel: MyViewModel by viewModels()
-        myViewModel.launchCoroutine()
-    }
 }
