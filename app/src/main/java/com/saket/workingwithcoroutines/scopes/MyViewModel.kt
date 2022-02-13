@@ -1,4 +1,4 @@
-package com.saket.workingwithcoroutines
+package com.saket.workingwithcoroutines.scopes
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
