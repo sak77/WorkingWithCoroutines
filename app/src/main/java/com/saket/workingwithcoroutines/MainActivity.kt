@@ -27,7 +27,22 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        asyncWithCoroutineScope()
+        //asyncWithCoroutineScope()
+
+        testDummyNetworkCallWithLaunch { response ->
+            println("Saket response $response")
+        }
+
+        /*
+        Suspend functions and regular functions launched by a
+        CoroutineScope, behave in a similar manner.
+        println("Saket calling myscope from ${Thread.currentThread().name}")
+        val myscope = CoroutineScope(Dispatchers.Main)
+        myscope.launch {
+            setTextAfterDelay("")
+        }
+        println("Saket after myscope")
+         */
     }
 
     /*
@@ -45,8 +60,10 @@ class MainActivity : AppCompatActivity() {
         Delay is a suspend function. So it can only be called from another suspend function.
         So add suspend modifier to the calling function
          */
+        println("Saket current thread is ${Thread.currentThread().name}")
+        //Thread.sleep(5000)
         delay(2000)
-        textView.setText(sayHello)
+        println("Saket saying $sayHello")
     }
 
     //We can call regular functions from coroutines

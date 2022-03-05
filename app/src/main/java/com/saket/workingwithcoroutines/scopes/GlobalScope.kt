@@ -24,13 +24,6 @@ const val TAG = "GlobalScope"
  * for the entire lifecycle of the app.
  */
 
-/*
-CoroutineScope - GlobalScope
-CoroutineBuilder - launch
-By default the CouroutineBuilder inherits context from CoroutineScope.
-However, we can also provide our own parameters to the CoroutineBuilder class.
-With CoroutineContext we can specify the dispatcher and job for the coroutine.
-*/
 fun launchGlobalScopeWithParams(view: View) {
     //You launch in GlobalScope with some additional params -
     GlobalScope.launch(context = Dispatchers.Main, block = {
@@ -39,13 +32,6 @@ fun launchGlobalScopeWithParams(view: View) {
     }, start = CoroutineStart.DEFAULT)
 }
 
-/*
-CoroutineScope: GlobalScope
-CoroutineBuilder - async.
-async returns the un-determined result of the operation as a deferred object.
-The value of the deferred object will be set once the coroutine completes its task.
-This value can be obtained using await() function.
- */
 fun asyncGlobalScopeWithNoParams(view: View) {
     GlobalScope.launch {
         val result = async { calculateSum(3, 4) }
@@ -63,8 +49,6 @@ fun calculateSum(a: Int, b: Int): Int {
 }
 
 /*
-CoroutineScope: GlobalScope
-CoroutineBuilder: async/await
 Here we execute 3 async coroutines inside the global scope. Each coroutine operates
 using a different coroutineContext. And the final result is displayed in the logs.
  */

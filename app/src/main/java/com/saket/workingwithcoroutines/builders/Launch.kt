@@ -130,3 +130,20 @@ fun countDown() {
         Thread.sleep(1000)
     }
 }
+
+/*
+One can use callback block to return value from a coroutine operation
+like shown here...
+ */
+fun testDummyNetworkCallWithLaunch(response: (Int) -> Unit) {
+    val myScope = CoroutineScope(Dispatchers.Default)
+    myScope.launch {
+        val result = doSomething()
+        response.invoke(result)
+    }
+}
+
+suspend fun doSomething() : Int {
+    delay(3000)
+    return 100
+}
