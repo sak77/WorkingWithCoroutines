@@ -44,55 +44,13 @@ fun launchCoroutineFromGlobalScope() {
     println("Saket after GlobalScope.launch")
 }
 
-fun cancelCoroutineAfter3secs() {
-    println("Saket calling GlobalScope.launch")
-    /*
-    val globalJob = GlobalScope.launch {
-        repeat(COUNTDOWN_VAL) { i->
-            println("Saket at ${COUNTDOWN_VAL - i} on ${Thread.currentThread().name}")
-            delay(1000)
-        }
-    }
-    println("Saket is going to cancel coroutine")
-    Thread.sleep(3000)
-    globalJob.cancel()
-    println("Saket cancelled coroutine")
-     */
-
-    /*
-    runBlocking {
-        val job = launch {
-            repeat(1000) {i ->
-                println("Saket in job: sleeping $i")
-                delay(500L)
-            }
-        }
-        delay(1300)
-        println("Saket in main: i am tierd fo waiting...")
-        job.cancel()
-        job.join()
-        println("Saket in main: now i can quit.")
-    }
-     */
-
-    val scope = CoroutineScope(Dispatchers.IO)
-    scope.launch {
-        repeat(10) { i ->
-            println("Saket in $i")
-            delay(1000)
-        }
-    }
-    Thread.sleep(3000)
-    scope.cancel()
-}
-
 /*
 Here we see that it is possible to launch multiple
 child coroutines from a coroutine scope. The coroutine
 scope will wait for every child coroutine to finish
 before closing.
  */
-fun testLaunchCoroutineWithMultiplechildren() {
+fun testLaunchCoroutineWithMultipleChildren() {
     val scope = CoroutineScope(Dispatchers.Default)
     scope.launch {
         launch {
@@ -114,13 +72,6 @@ fun testLaunchCoroutineWithMultiplechildren() {
             }
         }
     }
-
-    /*
-    if scope is cancelled then it also stops execution of
-    all its child coroutines.
-     */
-    //Thread.sleep(3000)
-    //scope.cancel()
 }
 
 

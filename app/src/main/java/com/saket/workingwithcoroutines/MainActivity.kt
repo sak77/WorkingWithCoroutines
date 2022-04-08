@@ -2,9 +2,9 @@ package com.saket.workingwithcoroutines
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import com.saket.workingwithcoroutines.builders.*
-import kotlinx.android.synthetic.main.activity_main.*
+import com.saket.workingwithcoroutines.scopes.launchCoroutineWhenLifecycleResumed
+import com.saket.workingwithcoroutines.scopes.lifecycleAwareFlowCollection
+import com.saket.workingwithcoroutines.scopes.repeatOnLifeCycleStart
 import kotlinx.coroutines.*
 
 /**
@@ -22,16 +22,18 @@ import kotlinx.coroutines.*
  * CoroutineScope
  */
 class MainActivity : AppCompatActivity() {
-    val TAG = "MainActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         //asyncWithCoroutineScope()
+        launchCoroutineWhenLifecycleResumed(this)
 
+        /*
         testDummyNetworkCallWithLaunch { response ->
             println("Saket response $response")
         }
+         */
 
         /*
         Suspend functions and regular functions launched by a
@@ -66,8 +68,13 @@ class MainActivity : AppCompatActivity() {
         println("Saket saying $sayHello")
     }
 
-    //We can call regular functions from coroutines
-    private fun showMessage(string_message: String) {
-        Log.v(TAG, string_message + " in " + Thread.currentThread().name)
+    override fun onStart() {
+        super.onStart()
+        println("Saket MainActivity started")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        println("Saket MainActivity stopped")
     }
 }
