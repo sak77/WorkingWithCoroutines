@@ -88,10 +88,19 @@ like shown here...
  */
 fun testDummyNetworkCallWithLaunch(response: (Int) -> Unit) {
     val myScope = CoroutineScope(Dispatchers.Default)
-    myScope.launch {
+    val myJob = myScope.launch {
         val result = doSomething()
         response.invoke(result)
     }
+    /*
+    Passing callback function to coroutines may cause memory leaks. If the function holds some
+    reference to context of Android component. Instead another way to invoke code after
+    coroutine execution is to return Job instance and call invokeOnCompletion.
+     */
+    myJob.invokeOnCompletion {
+        //DO SOMETHING
+    }
+
 }
 
 suspend fun doSomething() : Int {

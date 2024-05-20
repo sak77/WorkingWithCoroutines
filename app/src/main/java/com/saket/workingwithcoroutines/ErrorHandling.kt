@@ -12,7 +12,7 @@ exceptions. However, they still can be handled by using a CoroutineExceptionHand
 fun launch_exceptions() {
     CoroutineScope(Dispatchers.Default).launch {
         val job1 = launch {
-            //Exceptions thrown inside launch are not propogated outwards....
+            //Exceptions thrown inside launch are not propagated outwards....
             //if not handled, they are treated as uncaught exception
             try {
                 delay(3000)
